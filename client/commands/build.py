@@ -42,8 +42,9 @@ def cmd_build(os_name: str, name: str, output: str):
             "pyinstaller",
             "--onefile",
             "--name", output,
+            "--log-level=ERROR",  # минимизируем логи PyInstaller
             os.path.join(build_dir, "agent.py")
-        ], check=True)
+        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  # подавляем вывод
     except subprocess.CalledProcessError:
         print("Failed to build agent executable.")
         return
