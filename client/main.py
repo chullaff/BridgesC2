@@ -45,9 +45,9 @@ class BridgesMeshCLI(cmd.Cmd):
         Usage: build --os <os_name> --name <agent_name> --output <output_file>
         """
         parser = argparse.ArgumentParser(prog="build")
-        parser.add_argument("--os", required=True)
-        parser.add_argument("--name", required=True)
-        parser.add_argument("--output", required=True)
+        parser.add_argument("--os", required=True, help="Target OS (e.g. windows)")
+        parser.add_argument("--name", required=True, help="Agent name")
+        parser.add_argument("--output", required=True, help="Output filename")
         try:
             args = parser.parse_args(arg.split())
         except SystemExit:
@@ -55,7 +55,6 @@ class BridgesMeshCLI(cmd.Cmd):
             return
         
         cmd_build.cmd_build(args.os, args.name, args.output)
-
 
     def do_exit(self, arg):
         "Exit the CLI"
