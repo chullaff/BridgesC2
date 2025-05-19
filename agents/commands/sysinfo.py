@@ -1,7 +1,7 @@
 import platform
 import socket
 
-def sysinfo():
+def run():
     info = {
         "hostname": socket.gethostname(),
         "platform": platform.system(),

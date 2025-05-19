@@ -23,6 +23,7 @@ class MeshComms:
             msg = Message.from_dict(decrypted_json)
 
             if msg.msg_id in self.processed_msgs:
+                # Повторное сообщение — игнорируем
                 writer.close()
                 await writer.wait_closed()
                 return
@@ -30,9 +31,11 @@ class MeshComms:
             self.processed_msgs.add(msg.msg_id)
 
             if msg.route[-1] == self.agent_id:
+                # Сообщение для нас
                 if self.message_handler:
                     await self.message_handler(msg.payload)
             else:
+                # Сообщение нужно переслать дальше
                 await self._proxy_forward(msg)
 
         except Exception as e:
@@ -72,9 +75,6 @@ class MeshComms:
             print(f"[{self.agent_id}] Ошибка отправки сообщения на {ip}:{port}: {e}")
 
     async def send_along_route(self, msg: Message):
-        """
-        Начать отправку сообщения по маршруту.
-        """
         next_hop = self._next_hop(msg.route)
         if not next_hop:
             print(f"[{self.agent_id}] send_along_route: нет следующего узла")
@@ -87,4 +87,8 @@ class MeshComms:
         await self.send_message(ip, port, msg)
 
     def add_peer(self, peer_id, ip, port):
+        if peer_id not in self.known_peers:
+            print(f"[{self.agent_id}] Добавлен новый peer: {peer_id} ({ip}:{port})")
+        else:
+            print(f"[{self.agent_id}] Обновлен peer: {peer_id} ({ip}:{port})")
         self.known_peers[peer_id] = (ip, port)

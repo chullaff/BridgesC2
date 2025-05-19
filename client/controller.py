@@ -17,4 +17,8 @@ class Controller:
         resp.raise_for_status()
         return resp.json()
 
-    # Для расширения - команды run, connect и т.д. в будущем
+    def create_task(self, agent_id: str, command: str):
+        data = {"agent_id": agent_id, "command": command}
+        resp = requests.post(f"{self.api_url}/tasks/", params=data)
+        resp.raise_for_status()
+        return resp.json()
