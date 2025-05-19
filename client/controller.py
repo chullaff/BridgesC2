@@ -1,6 +1,7 @@
 import requests
+from shared.config import SERVER_URL
 
-API_URL = "http://localhost:8000/api"
+API_URL = f"{SERVER_URL}/api"
 
 class Controller:
     def __init__(self, api_url=API_URL):

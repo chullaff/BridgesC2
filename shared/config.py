@@ -1,7 +1,7 @@
 import os
 
 # URL сервера (можно менять через переменную окружения)
-SERVER_URL = os.getenv("BRIDGESMESH_SERVER_URL", "http://127.0.0.1:8000")
+SERVER_URL = os.getenv("BRIDGESMESH_SERVER_URL", "http://192.168.1.74:8000")
 
 # Порт, на котором агенты будут слушать mesh-сообщения по умолчанию
 MESH_LISTEN_PORT = int(os.getenv("BRIDGESMESH_MESH_PORT", "9000"))

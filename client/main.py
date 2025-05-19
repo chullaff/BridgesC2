@@ -1,11 +1,11 @@
 import cmd
 import argparse
-from .commands import list as cmd_list
-from .commands import connect as cmd_connect
-from .commands import use as cmd_use
-from .commands import run as cmd_run
-from .commands import build as cmd_build
-from .state import state
+from client.commands import list as cmd_list
+from client.commands import connect as cmd_connect
+from client.commands import use as cmd_use
+from client.commands import run as cmd_run
+from client.commands import build as cmd_build
+from client.state import state
 
 class BridgesMeshCLI(cmd.Cmd):
     intro = "BridgesC2 Operator CLI. Type help or ? to list commands.\n"

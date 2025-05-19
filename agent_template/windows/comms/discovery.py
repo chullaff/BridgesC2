@@ -1,5 +1,5 @@
 import requests
-from ...shared.config import SERVER_URL
+from shared.config import SERVER_URL
 
 BOOTSTRAP_URL = SERVER_URL + "/api"
 

