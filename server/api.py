@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .models import Agent, Task, Result
+from .models import Agent, Task, Result, Peer
 from .storage import get_session
 from .utils import generate_id, log_info
 
@@ -51,3 +51,22 @@ def submit_result(task_id: str, output: str, db: Session = Depends(get_session))
     db.commit()
     log_info(f"Result submitted for task {task_id}")
     return {"id": result_id, "task_id": task_id, "output": output}
+
+
+@router.post("/peers/register", response_model=dict)
+def register_peer(id: str, ip: str, port: int, db: Session = Depends(get_session)):
+    peer = db.query(Peer).filter(Peer.id == id).first()
+    if peer:
+        peer.ip = ip
+        peer.port = port
+    else:
+        peer = Peer(id=id, ip=ip, port=port)
+        db.add(peer)
+    db.commit()
+    return {"status": "ok", "id": id, "ip": ip, "port": port}
+
+
+@router.get("/peers/", response_model=list)
+def get_peers(db: Session = Depends(get_session)):
+    peers = db.query(Peer).all()
+    return [{"id": p.id, "ip": p.ip, "port": p.port} for p in peers]

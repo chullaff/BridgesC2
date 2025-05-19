@@ -29,3 +29,9 @@ class Result(Base):
     output = Column(Text, nullable=True)
 
     task = relationship('Task', back_populates='results')
+
+class Peer(Base):
+    __tablename__ = 'peers'
+    id = Column(String, primary_key=True)  # Обычно agent_id
+    ip = Column(String, nullable=False)
+    port = Column(Integer, nullable=False)
