@@ -70,3 +70,14 @@ def register_peer(id: str, ip: str, port: int, db: Session = Depends(get_session
 def get_peers(db: Session = Depends(get_session)):
     peers = db.query(Peer).all()
     return [{"id": p.id, "ip": p.ip, "port": p.port} for p in peers]
+
+
+@router.get("/results/{task_id}", response_model=dict)
+def get_result(task_id: str, db: Session = Depends(get_session)):
+    result = db.query(Result).filter(Result.task_id == task_id).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+    return {
+        "task_id": task_id,
+        "output": result.output
+    }

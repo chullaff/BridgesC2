@@ -23,3 +23,7 @@ class Controller:
         resp = requests.post(f"{self.api_url}/tasks/", params=data)
         resp.raise_for_status()
         return resp.json()
+    def get_result(self, task_id: str):
+        resp = requests.get(f'{self.api_url}/results/{task_id}')
+        resp.raise_for_status()
+        return resp.json()
